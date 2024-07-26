@@ -31,17 +31,5 @@ router.post(
 )
 
 // 图片上传（客户端生成hash名称）
-router.post(
-  "/image-client",
-  async (ctx, next) => {
-    // 跨域设置
-    ctx.set("Access-Control-Allow-Origin", "*")
-    ctx.set(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Content-Length, Authorization, Accept, X-Requested-With , yourHeaderFeild"
-    )
-    await next()
-  },
-  clientUploadImage
-)
+router.post("/image-client", clientUploadImage)
 module.exports = router

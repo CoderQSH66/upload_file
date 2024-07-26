@@ -9,6 +9,18 @@ const fileRouter = require("../router/file.router")
 // 创建app应用程序
 const app = new Koa()
 
+// app跨域处理
+app.use(async (ctx, next) => {
+  // 跨域设置
+  ctx.set("Access-Control-Allow-Origin", "*")
+  ctx.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Content-Length, Authorization, Accept, X-Requested-With , yourHeaderFeild"
+  )
+  // 解决option跨域
+  await next()
+})
+
 // 处理body、文件上传
 app.use(
   koaBody({
@@ -20,22 +32,61 @@ app.use(
       multipart: true,
       uploadDir: path.join(__dirname, "../../public"),
       keepExtensions: true,
-      maxFieldsSize: 1024 * 1024 * 1024,
-      // onFileBegin(name, file) {
-      //   console.log(name, file)
-      //   // const fileName = file.originalFilename.split(".")[0]
-      //   // const dirPath = path.join(__dirname, `../../public/${fileName}`)
-      //   // if (!fs.existsSync(dirPath)) {
-      //   //   fs.mkdirSync(dirPath)
-      //   // }
-      //   // file.filepath = dirPath + "\\" + Date.now() + "_" + file.originalFilename
-      // },
-      filter(other) {
-        console.log(other)
+      maxFieldsSize: 200 * 1024 * 1024,
+      onFileBegin(name, file) {
+        // console.log(name, file)
+        const filepath = path.join(
+          __dirname,
+          `../../public/images/${file.originalFilename}`
+        )
+        if (fs.existsSync(filepath)) {
+          file.isExist = true
+        }
+        file.filepath = filepath
+        file.newFilename = file.originalFilename
       }
+
+      // 过滤文件
+      // filter({ originalFilename }) {
+      //   const filepath = path.join(
+      //     __dirname,
+      //     `../../public/images/${originalFilename}`
+      //   )
+      //   if (fs.existsSync(filepath)) {
+      //     return false
+      //   }
+      //   return true
+      // },
+
+      // 重命名文件名
+      //   filename: function (name, ext, part, form) {
+      //     const filepath = path.join(
+      //       __dirname,
+      //       `../../public/images/${part.originalFilename}`
+      //     )
+      //     // 监听文件上传过程，前置拦截
+      //     form.on("fileBegin", function (_name, file) {
+      //       file.filepath = filepath
+      //     })
+      //     form.on("error", (err) => {
+      //       app.emit("error", err, app.context)
+      //       throw err
+      //     })
+      //     return part.originalFilename
+      //   }
+      // },
+    },
+    onError(err, ctx) {
+      ctx.errCode = err.code
     }
   })
 )
+app.on("error", (error, ctx) => {
+  ctx.body = {
+    data: error,
+    msg: "文件不能超过200M"
+  }
+})
 
 // 部署静态资源
 app.use(koaStatic(path.resolve(__dirname, "../../static/dist")))

@@ -36,21 +36,25 @@
     <div class="drag">
       <h2>base64上传图片文件</h2>
       <but class="selectFile">选择图片</but>
-      <input hidden class="ipt" type="file" accept="image/*" multiple></input>
+      <input hidden class="ipt" type="file" accept="image/*,.mp4,.mp3" multiple></input>
       <button class="upload">上传服务器</button>
       <div class="pre-img">
       </div>
-      
+      <progress value="0" max="100"></progress>
+      <span class="percent"></span>
     </div>
     <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
     <script src="https://unpkg.com/spark-md5@3.0.2/spark-md5.js"></script>
     <script>
       const selectFileEle = document.body.querySelector(".selectFile")
       const iptEle = document.body.querySelector(".ipt")
       const preEle = document.body.querySelector(".pre-img")
       const uploadEle = document.body.querySelector(".upload")
-    
+      const progressEle = document.body.querySelector("progress")
+      const percentEle = document.body.querySelector(".percent")
+
       // 已选择的文件列表
       let fileList = []
       
@@ -67,8 +71,15 @@
         for(const file of iptEle.files) {
           // 将文件转化为base64格式
           const base64 = await filetobase64(file)
-          const filename = await filetobuffer(file)
-          fileList.push({file, filename})
+          const filehash = await filetobuffer(file)
+          const filename = filehash + '.' +file.name.split(".")[1]
+
+          // 创建新的文件对象，修改名称
+          const newFile = new File([file], filename, {
+            type: file.type
+          })
+          fileList.push(newFile)
+
           // 创建预览img
           const imgEle = document.createElement("img")
           imgEle.src = base64
@@ -90,12 +101,13 @@
         }
       })
      }
+    
      /** 读取文件base64 */
      const filetobase64 = (file) => {
       return new Promise((reslove) => {
         // 文件读取器
         const fileReader = new FileReader()
-        // 读取buffer
+        // 读取base64
         fileReader.readAsDataURL(file)
         fileReader.onload = event => {
           reslove(event.target.result)
@@ -116,15 +128,25 @@
                   'Content-Type': 'multipart/form-data'
                 },
                 data: {
-                  file: fileList[index].file,
-                  filename: fileList[index].filename
+                  file: fileList[index],
+                  filename: fileList[index].name
+                },
+                onUploadProgress(ev) {
+                  const {loaded, total} = ev
+                  progressEle.value = loaded / total * 100 | 0
+                  percentEle.textContent = `${progressEle.value}%`
                 }
               })
             }
           postList.push(_request())
         }
-        const res =await Promise.all(postList)
-        return res
+          const res = await Promise.all(postList)
+          console.log(res)
+          setTimeout(() => {
+            progressEle.value = 100
+            percentEle.textContent = `${progressEle.value}%`
+          }, 300);
+          preEle.innerHTML = ""
      })
 
     </script>

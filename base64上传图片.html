@@ -82,10 +82,14 @@
                 headers: {
                   'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                data: (new URLSearchParams({
+                // data: (new URLSearchParams({
+                //   file: fileList[index].base64,
+                //   filename: fileList[index].filename
+                // })).toString()
+                data: {
                   file: fileList[index].base64,
                   filename: fileList[index].filename
-                })).toString()
+                }
               })
             }
           postList.push(_request())

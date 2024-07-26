@@ -31,7 +31,10 @@ class FileController {
       )
     )
     ctx.set("Access-Control-Expose-Headers", "content-disposition")
-    ctx.set("Content-Disposition", "attachment; filename=" + encodeURIComponent(name))
+    ctx.set(
+      "Content-Disposition",
+      "attachment; filename=" + encodeURIComponent(name)
+    )
     ctx.body = fileReadStream
   }
 
@@ -49,7 +52,10 @@ class FileController {
     // 获取文件的后缀
     const suffix = filename.slice(filename.lastIndexOf("."))
     // 写入的文件路径
-    const filePath = path.join(__dirname, `../../public/images/${filehash}${suffix}`)
+    const filePath = path.join(
+      __dirname,
+      `../../public/images/${filehash}${suffix}`
+    )
     // 判断文件是否存在
     if (FileController.isHashExist(filePath)) {
       return (ctx.body = {
@@ -73,7 +79,19 @@ class FileController {
 
   /** 客户端处理图片hash */
   async clientUploadImage(ctx, next) {
-    console.log(ctx.request.body)
+    // console.log(ctx.request.body)
+    // console.log(ctx.request.files)
+    const isExist = ctx.request.files?.file?.isExist
+    const errCode = ctx.errCode
+    if (errCode) {
+      return ctx.app.emit("error", errCode, ctx)
+    }
+    if (isExist) {
+      return (ctx.body = {
+        data: null,
+        msg: "文件已存在！"
+      })
+    }
     ctx.body = {
       data: ctx.request.files
     }
