@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .drag {
+        position: relative;
+        width: 600px;
+        height: 300px;
+        margin: 0 auto;
+        border: 2px dotted;
+        text-align: center;
+      }
+      .drag span {
+        display: inline-block;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 16px;
+        color: #918e8e;
+      }
+      .selectFile {
+          cursor: pointer;
+          color: rgb(94, 94, 187);
+          font-weight: bold;
+        }
+      .drag .content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-evenly;
+        position: relative;
+        top: 50%;
+      }
+      .drag .content span::after {
+        content: "移除";
+        position: relative;
+        left: 10px;
+        top: 3px;
+        font-size: 16px;
+        color: #df1234;
+        cursor:pointer;
+      }
+      .upload {
+        position: absolute;
+        bottom: -10%;
+        transform: translateX(-50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="drag">
+      <span> 拖拽文件到此处或<em class="selectFile">点击上传</em></span>
+      <div class="content"></div>
+      <button class="upload">上传服务器</button>
+      <input hidden class="ipt" type="file" multiple></input>
+      <!-- <input hidden class="ipt" type="file" accept="image/*"  multiple></input> -->
+      <!-- <input hidden class="ipt" type="file" multiple  webkitdirectory mozdirectory odirectory></input> -->
+    </div>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      const dragEle = document.body.querySelector(".drag")
+      const selectFileEle = document.body.querySelector(".selectFile")
+      const iptEle = document.body.querySelector(".ipt")
+      const contentEle = document.body.querySelector(".content")
+      const uploadEle = document.body.querySelector(".upload")
+    
+      // 已选择的文件列表
+      let fileList = []
+      
+      // 监听选择文件点击
+      selectFileEle.addEventListener("click", (e) => {
+        // 触发input的点击，选择文件
+        iptEle.click()
+      })
+      
+      // 监听文件选择
+      iptEle.addEventListener("change", () => {
+        fileList = []
+        // 将选择的文件添加至文件列表中
+        for(const file of iptEle.files) {
+          // 判断文件是否为图片
+          if (!/^image\//.test(file.type)) {
+            alert("只能上传.png、.jpg、.jpeg格式的图片文件")
+            continue
+          }
+          // 判断大小是否大于2Mb
+          if (file.size > 2 * 1024 * 1024) {
+            alert("文件大小不能超过2Mb")
+            continue
+          }
+          fileList.push(file)
+          console.log(file)
+        }
+        // 显示选择的文件
+        showFiles(fileList)
+      })
+
+      // 监听列表删除（事件委托）
+      contentEle.addEventListener("click", (e) => {
+        for (let index = 0; index < fileList.length; index++) {
+          const file = fileList[index];
+          if (file.name === e.target.textContent) {
+            fileList.splice(index, 1)
+            e.target.remove()
+          }
+        }
+      })
+
+
+      dragEle.addEventListener("dragenter", (e) => {
+        e.preventDefault()
+        dragEle.style.backgroundColor = "#a18e8e33"
+        dragEle.style.transition = "all 0.6s"
+      })
+      dragEle.addEventListener("dragleave", (e) => {
+        e.preventDefault()
+        dragEle.style.backgroundColor = "#fff"
+      })
+      dragEle.addEventListener("dragover", (e) => {
+        e.preventDefault()
+        // console.log("拖拽移动")
+      })
+      
+      // 拖拽选择文件
+      dragEle.addEventListener("drop", (e) => {
+        // 阻止默认行为
+        e.preventDefault()
+        // 清空上次的文件
+        fileList = []
+        contentEle.innerHTML = ""
+        const items = e.dataTransfer.items
+        const readFiles = (entry) => {
+          if (entry.isDirectory) {
+            const render = entry.createReader()
+            render.readEntries((files) => {
+              for(const file of files) {
+                readFiles(file)
+              }
+            })
+          }else {
+            entry.file((file) => {
+              fileList.push(file)
+            })
+          }
+        }
+        for(const item of items) {
+          const entry = item.webkitGetAsEntry()
+          readFiles(entry)
+        }
+        setTimeout(() => {
+          showFiles(fileList)
+          console.log(fileList)
+        }, 50);
+        dragEle.style.backgroundColor = "#fff"
+      })
+
+      // 显示选择的文件
+      const showFiles = (fileList) => {       
+        fileList.forEach(element => {
+          // console.log(element)
+          const spanEle = document.createElement("span")
+          spanEle.textContent = element.name
+          spanEle.style.cssText = "display:block;font-size:13px;color:#000"
+          contentEle.append(spanEle)
+        });
+      }
+
+      // 点击上传服务器
+      uploadEle.addEventListener("click", (e) => {
+        if (fileList.length === 0) {
+          alert("请选择要上传的文件")
+          return
+        }
+        const postList = []
+        for (let index = 0; index < fileList.length; index++) {
+          const formData = new FormData()
+          formData.append("file", fileList[index])
+          formData.append("index", index)
+          const _request = () => {
+              return axios.request({
+                method: "post",
+                url: "http://localhost:8000/file/upload",
+                headers: {
+                  'Content-Type': 'multipart/form-data',
+                },
+                data: formData
+              })
+            }
+          postList.push(_request())
+        }
+        Promise.all(postList).then((res) => {
+          console.log(res)
+          fileList = []
+          contentEle.innerHTML = ""
+        }).catch(err => {
+          console.log(err)
+        })
+      })
+    </script>
+  </body>
+</html>

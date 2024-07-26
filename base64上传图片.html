@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .drag {
+        position: relative;
+        width: 600px;
+        height: 300px;
+        margin: 0 auto;
+        border: 2px dotted;
+        text-align: center;
+      }
+
+      .selectFile {
+          cursor: pointer;
+          color: rgb(94, 94, 187);
+          font-weight: bold;
+        }
+
+    </style>
+  </head>
+  <body>
+    <div class="drag">
+      <h2>base64上传图片文件</h2>
+      <but class="selectFile">上传图片</but>
+      <input hidden class="ipt" type="file" accept="image/*" multiple></input>
+    </div>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      const selectFileEle = document.body.querySelector(".selectFile")
+      const iptEle = document.body.querySelector(".ipt")
+
+    
+      // 已选择的文件列表
+      let fileList = []
+      
+      // 监听选择文件点击
+      selectFileEle.addEventListener("click", (e) => {
+        // 触发input的点击，选择文件
+        iptEle.click()
+      })
+      
+      // 监听文件选择
+      iptEle.addEventListener("change", async () => {
+        fileList = []
+        // 将选择的文件添加至文件列表中
+        for(const file of iptEle.files) {
+          // 将文件转化为base64格式
+          const base64 = await filetobase64(file)
+          const filename = file.name
+          fileList.push({base64, filename})
+        }
+        const res = await uploadImg(fileList)
+        console.log(res)
+      })
+
+     /** 将图片文件读取为base64 */
+     const filetobase64 = (file) => {
+      return new Promise((reslove) => {
+        // 文件读取器
+        const fileReader = new FileReader()
+        // 读取Base64
+        fileReader.readAsDataURL(file)
+        fileReader.onload = event => {
+          reslove(encodeURIComponent(event.target.result))
+        }
+      })
+     }
+
+      /** 点击上传服务器 */
+       const uploadImg = async (fileList) => {
+        const postList = []
+        for (let index = 0; index < fileList.length; index++) {
+          const _request = () => {
+              return axios.request({
+                method: "post",
+                url: "http://localhost:8000/file/image",
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                data: (new URLSearchParams({
+                  file: fileList[index].base64,
+                  filename: fileList[index].filename
+                })).toString()
+              })
+            }
+          postList.push(_request())
+        }
+        const res =await Promise.all(postList)
+        return res
+      }
+    </script>
+  </body>
+</html>
