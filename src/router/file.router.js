@@ -3,7 +3,8 @@ const {
   uploadFile,
   downloadFile,
   uploadImage,
-  clientUploadImage
+  clientUploadImage,
+  uploadFilePlus
 } = require("../controller/file.controller")
 
 // 创建路由对象
@@ -32,4 +33,7 @@ router.post(
 
 // 图片上传（客户端生成hash名称）
 router.post("/image-client", clientUploadImage)
+
+// 文件上传-plus
+router.post("/upload-plus", uploadFilePlus)
 module.exports = router

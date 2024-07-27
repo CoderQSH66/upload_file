@@ -79,8 +79,8 @@ class FileController {
 
   /** 客户端处理图片hash */
   async clientUploadImage(ctx, next) {
-    // console.log(ctx.request.body)
-    // console.log(ctx.request.files)
+    console.log(ctx.request.body)
+    console.log(ctx.request.files)
     const isExist = ctx.request.files?.file?.isExist
     const errCode = ctx.errCode
     if (errCode) {
@@ -94,6 +94,29 @@ class FileController {
     }
     ctx.body = {
       data: ctx.request.files
+    }
+  }
+
+  /** 文件上传plus */
+  async uploadFilePlus(ctx, next) {
+    const isExist = ctx.request.files?.file?.isExist
+    const errCode = ctx.errCode
+    if (errCode) {
+      return ctx.app.emit("error", errCode, ctx)
+    }
+    if (isExist) {
+      return (ctx.body = {
+        code: -2002,
+        data: null,
+        msg: "文件已存在！"
+      })
+    }
+    ctx.body = {
+      data: {
+        code: 200,
+        data: ctx.request.files.file,
+        msg: "文件上传成功"
+      }
     }
   }
 

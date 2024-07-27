@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      li {
+        list-style-type: none;
+        padding: 5px;
+        display: flex;
+        align-items: center;
+      }
+      li span:first-child {
+        display: inline-block;
+        width: 60%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: rgb(119, 121, 122);
+      }
+      li span:last-child {
+        display: inline-block;
+        position: relative;
+        right: -10%;
+        color: #df1234;
+      }
+      .progress {
+        display: inline-block;
+        margin-top: 5px;
+        height: 2px;
+        background-color: green;
+      }
+      .file_main {
+        width: 500px;
+        min-height: 300px;
+        border: 2px dotted;
+      }
+      .file_main .operate {
+        width: 200px;
+        display: flex;
+        justify-content: space-around;
+        cursor: pointer;
+      }
+      .file_main .operate .select {
+        padding: 5px;
+        background-color: #4169e1;
+        color: #fff;
+      }
+      .file_main .operate .select:active,
+      .file_main .operate .upload:active {
+        opacity: 0.6;
+      }
+      .file_main .operate .upload {
+        padding: 5px;
+        background-color: rgb(51, 179, 51);
+        color: #fff;
+      }
+      .file-list {
+        cursor: pointer;
+      }
+      .none-select {
+        pointer-events: none;
+        background-color: gray !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="file_main">
+      <h4>多文件上传</h4>
+      <div class="operate">
+        <div class="select">选择文件</div>
+        <div class="upload">上传文件</div>
+        <input class="file_input" type="file" multiple hidden />
+      </div>
+      <ul class="file-list">
+        <!-- <li>
+          <span>1.png</span>
+          <span class="progress">删除</span>
+        </li> -->
+      </ul>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+      const iptEle = document.body.querySelector(".file_input")
+      const selectEle = document.body.querySelector(".select")
+      const uploadEle = document.body.querySelector(".upload")
+      const filelistEle = document.body.querySelector(".file-list")
+
+      // 全局文件列表
+      let filesList = []
+      // let liEles = []
+
+      /** 监听选择文件按钮点击 */
+      selectEle.addEventListener("click", () => {
+        // 触发文件选择框
+        iptEle.click()
+      })
+
+      /** 监听文件选择事件 */
+      iptEle.addEventListener("change", () => {
+        let str = ""
+        // 为每一个文件添加唯一key
+        filesList = Array.from(iptEle.files).map((file) => {
+          return {
+            file,
+            name: file.name,
+            key: (Math.random() * Date.now()).toString(16).replace(".", "")
+          }
+        })
+        filesList.forEach((file) => {
+          str += `
+            <li key="${file.key}">
+              <span>文件：${file.name}</span>
+              <span>删除</span>
+            </li>
+          `
+        })
+        filelistEle.innerHTML = str
+        // console.log(filesList)
+        // liEles = Array.from(filelistEle.querySelectorAll("li"))
+      })
+
+      /** 监听文件列表点击 */
+      filelistEle.addEventListener("click", (e) => {
+        if (e.target.tagName === "SPAN" && e.target.textContent === "删除") {
+          const liEle = e.target.parentElement
+          if (liEle) {
+            const key = liEle.getAttribute("key")
+            liEle.remove()
+            filesList = filesList.filter((file) => file.key !== key)
+          }
+          // const removeIndex = liEles.findIndex(
+          //   (liEle) => liEle === e.target.parentElement
+          // )
+          // filesList.splice(removeIndex, 1)
+          // liEles.splice(removeIndex, 1)
+        }
+      })
+
+      /** 文件上传服务器 */
+      uploadEle.addEventListener("click", async () => {
+        if (filesList.length === 0) {
+          alert("请选择文件！")
+          return
+        }
+        const liEles = Array.from(filelistEle.querySelectorAll("li"))
+        const promiseList = []
+        filesList.forEach((item) => {
+          console.log(item)
+          const liEle = liEles.find(
+            (liBox) => liBox.getAttribute("key") === item.key
+          )
+          const spanLastEle = liEle.querySelector("span:last-child")
+          spanLastEle.textContent = ""
+          spanLastEle.classList = "progress"
+          const request = () => {
+            return axios
+              .request({
+                method: "post",
+                url: "http://localhost:8000/file/upload-plus",
+                headers: {
+                  "Content-Type": "multipart/form-data"
+                },
+                data: {
+                  file: item.file
+                },
+                onUploadProgress(ev) {
+                  const { loaded, total } = ev
+                  spanLastEle.style.width = `${(loaded / total) * 100}px`
+                  // progressEle.value = ((loaded / total) * 100) | 0
+                  // percentEle.textContent = `${progressEle.value}%`
+                }
+              })
+              .then((res) => {
+                setTimeout(() => {
+                  spanLastEle.classList.remove("progress")
+                  spanLastEle.textContent = "上传完成"
+                  spanLastEle.style.width = `100px`
+                  if (res.data.code === -1001) {
+                    spanLastEle.textContent = "上传失败"
+                  }
+                  // res.spanLastEle = spanLastEle
+                }, 500)
+                return res
+              })
+          }
+          promiseList.push(request())
+        })
+        try {
+          const res = await Promise.all(promiseList)
+          // res.forEach((reslut) => {
+          //   console.log(reslut)
+          //   reslut.spanLastEle.classList.remove("progress")
+          //   reslut.spanLastEle.textContent = "上传完成"
+          //   reslut.spanLastEle.style.width = `100px`
+          //   if (reslut.data.code === -1001) {
+          //     reslut.spanLastEle.textContent = "上传失败"
+          //   }
+          // })
+          console.log(res)
+        } catch (error) {
+          console.log(error)
+        }
+      })
+    </script>
+  </body>
+</html>

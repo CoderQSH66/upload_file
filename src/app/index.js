@@ -39,9 +39,7 @@ app.use(
           __dirname,
           `../../public/images/${file.originalFilename}`
         )
-        if (fs.existsSync(filepath)) {
-          file.isExist = true
-        }
+        file.isExist = fs.existsSync(filepath)
         file.filepath = filepath
         file.newFilename = file.originalFilename
       }
@@ -83,6 +81,7 @@ app.use(
 )
 app.on("error", (error, ctx) => {
   ctx.body = {
+    code: -1001,
     data: error,
     msg: "文件不能超过200M"
   }
