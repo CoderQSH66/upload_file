@@ -80,6 +80,7 @@
         </li> -->
       </ul>
     </div>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
@@ -149,9 +150,7 @@
         const promiseList = []
         filesList.forEach((item) => {
           console.log(item)
-          const liEle = liEles.find(
-            (liBox) => liBox.getAttribute("key") === item.key
-          )
+          const liEle = liEles.find((liBox) => liBox.getAttribute("key") === item.key)
           const spanLastEle = liEle.querySelector("span:last-child")
           spanLastEle.textContent = ""
           spanLastEle.classList = "progress"
