@@ -31,10 +31,7 @@ class FileController {
       )
     )
     ctx.set("Access-Control-Expose-Headers", "content-disposition")
-    ctx.set(
-      "Content-Disposition",
-      "attachment; filename=" + encodeURIComponent(name)
-    )
+    ctx.set("Content-Disposition", "attachment; filename=" + encodeURIComponent(name))
     ctx.body = fileReadStream
   }
 
@@ -52,10 +49,7 @@ class FileController {
     // 获取文件的后缀
     const suffix = filename.slice(filename.lastIndexOf("."))
     // 写入的文件路径
-    const filePath = path.join(
-      __dirname,
-      `../../public/images/${filehash}${suffix}`
-    )
+    const filePath = path.join(__dirname, `../../public/images/${filehash}${suffix}`)
     // 判断文件是否存在
     if (FileController.isHashExist(filePath)) {
       return (ctx.body = {
@@ -117,6 +111,16 @@ class FileController {
         data: ctx.request.files.file,
         msg: "文件上传成功"
       }
+    }
+  }
+
+  /** 文件切片上传 */
+  async uploadFileChunk(ctx, next) {
+    // console.log(ctx.request.files)
+    ctx.body = {
+      code: 200,
+      data: ctx.request.files.chunk,
+      msg: "切片上传成功！"
     }
   }
 

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      li {
+        list-style-type: none;
+        padding: 5px;
+        display: flex;
+        align-items: center;
+      }
+      li span:first-child {
+        display: inline-block;
+        width: 60%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: rgb(119, 121, 122);
+      }
+      li span:last-child {
+        display: inline-block;
+        position: relative;
+        right: -10%;
+        color: #df1234;
+      }
+      .progress {
+        display: inline-block;
+        margin-top: 5px;
+        height: 2px;
+        background-color: green;
+      }
+      .file_main {
+        width: 500px;
+        min-height: 300px;
+        border: 2px dotted;
+      }
+      .file_main .operate {
+        width: 200px;
+        display: flex;
+        justify-content: space-around;
+        cursor: pointer;
+      }
+      .file_main .operate .select {
+        padding: 5px;
+        background-color: #4169e1;
+        color: #fff;
+      }
+      .file_main .operate .select:active,
+      .file_main .operate .upload:active {
+        opacity: 0.6;
+      }
+      .file_main .operate .upload {
+        padding: 5px;
+        background-color: rgb(51, 179, 51);
+        color: #fff;
+      }
+      .file-list {
+        cursor: pointer;
+      }
+      .none-select {
+        pointer-events: none;
+        background-color: gray !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="file_main">
+      <h4>大文件上传</h4>
+      <div class="operate">
+        <div class="select">选择文件</div>
+        <div class="upload">上传文件</div>
+        <input class="file_input" type="file" hidden />
+      </div>
+      <ul class="file-list">
+        <!-- <li>
+          <span>1.png</span>
+          <span class="progress"></span>
+        </li> -->
+      </ul>
+    </div>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
+    <script src="./axios.js"></script>
+    <script src="https://unpkg.com/spark-md5@3.0.2/spark-md5.js"></script>
+
+    <script>
+      const selectEle = document.body.querySelector(".select")
+      const uploadEle = document.body.querySelector(".upload")
+      const iptEle = document.body.querySelector(".file_input")
+      const filelistEle = document.body.querySelector(".file-list")
+
+      /** 上传的文件 */
+      let upFile = null
+
+      /** 监听选择文件按钮点击 */
+      selectEle.addEventListener("click", () => {
+        // 触发文件选择框
+        iptEle.click()
+      })
+
+      /** 获取选择的文件 */
+      iptEle.addEventListener("change", (e) => {
+        upFile = iptEle.files[0]
+        showFilelist(upFile)
+      })
+
+      /** 展示选择的文件 */
+      const showFilelist = (upFile) => {
+        filelistEle.innerHTML = `
+            <li>
+              <span>文件：${upFile.name}</span>
+              <span class="progress" data-progress="0%"></span>
+            </li>
+          `
+      }
+
+      /** 进度条管控 */
+      const showProgress = (progress) => {
+        const spanLastEle = filelistEle.querySelector("span:last-child")
+        spanLastEle.style.width = `${progress}px`
+      }
+
+      /** 上传文件 */
+      uploadEle.addEventListener("click", async () => {
+        // 切片上传进度
+        let progress = 0
+        // 分片大小
+        const chunkSize = 1024 * 1024
+        // 进行分片，返回分片file对象的列表
+        const { chunks: chunksList, hash } = await chunksFile(upFile, chunkSize)
+        // promise列表
+        const promiselist = []
+        console.log(upFile)
+        console.log(chunksList)
+        // 发送分片
+        chunksList.forEach((item) => {
+          const requests = () => {
+            return axios
+              .request({
+                method: "post",
+                url: "http://localhost:8000/file/upload-chunk",
+                headers: {
+                  "Content-Type": "multipart/form-data"
+                },
+                data: {
+                  chunk: item
+                }
+              })
+              .then((res) => {
+                progress++
+                showProgress((progress / chunksList.length) * 100)
+                return res
+              })
+          }
+          promiselist.push(requests())
+        })
+        try {
+          const res = await Promise.all(promiselist)
+          // 通知进行切片合并
+          const ext = upFile.name.slice(upFile.name.lastIndexOf("."))
+          merge(hash, ext)
+        } catch (error) {
+          console.log(error)
+        }
+      })
+
+      /** 文件切片 */
+      const chunksFile = async (file, chunkSize) => {
+        const chunks = []
+        const hash = await fileHash(file)
+        for (let size = 0, index = 0; size < file.size; size += chunkSize, index++) {
+          const chunk = file.slice(size, size + chunkSize)
+          chunks.push(new File([chunk], `${hash}_${index}`))
+        }
+        return { chunks, hash }
+      }
+
+      /** 读取文件hash */
+      const fileHash = (file) => {
+        return new Promise((reslove) => {
+          const fileReader = new FileReader()
+          fileReader.readAsArrayBuffer(file)
+          fileReader.onload = (e) => {
+            const spark = new SparkMD5.ArrayBuffer()
+            spark.append(e.target.result)
+            reslove(spark.end())
+          }
+        })
+      }
+
+      /** 切片合并 */
+      const merge = (hash, ext) => {
+        axios.post("http://localhost:8000/file/merge", { hash, ext })
+      }
+    </script>
+  </body>
+</html>

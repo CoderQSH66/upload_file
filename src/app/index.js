@@ -22,63 +22,65 @@ app.use(async (ctx, next) => {
 })
 
 // 处理body、文件上传
-app.use(
-  koaBody({
-    multipart: true,
-    formLimit: "10mb",
-    jsonLimit: "10mb",
-    textLimit: "10mb",
-    formidable: {
-      multipart: true,
-      uploadDir: path.join(__dirname, "../../public"),
-      keepExtensions: true,
-      maxFieldsSize: 200 * 1024 * 1024,
-      onFileBegin(name, file) {
-        // console.log(name, file)
-        const filepath = path.join(
-          __dirname,
-          `../../public/images/${file.originalFilename}`
-        )
-        file.isExist = fs.existsSync(filepath)
-        file.filepath = filepath
-        file.newFilename = file.originalFilename
-      }
+/**进行文件切片上传，暂时先注释 */
+// app.use(
+//   koaBody({
+//     multipart: true,
+//     formLimit: "10mb",
+//     jsonLimit: "10mb",
+//     textLimit: "10mb",
+//     formidable: {
+//       multipart: true,
+//       uploadDir: path.join(__dirname, "../../public"),
+//       keepExtensions: true,
+//       maxFieldsSize: 200 * 1024 * 1024,
+//       onFileBegin(name, file) {
+//         // console.log(name, file)
+//         const filepath = path.join(
+//           __dirname,
+//           `../../public/images/${file.originalFilename}`
+//         )
+//         file.isExist = fs.existsSync(filepath)
+//         file.filepath = filepath
+//         file.newFilename = file.originalFilename
+//       }
 
-      // 过滤文件
-      // filter({ originalFilename }) {
-      //   const filepath = path.join(
-      //     __dirname,
-      //     `../../public/images/${originalFilename}`
-      //   )
-      //   if (fs.existsSync(filepath)) {
-      //     return false
-      //   }
-      //   return true
-      // },
+//       // 过滤文件
+//       // filter({ originalFilename }) {
+//       //   const filepath = path.join(
+//       //     __dirname,
+//       //     `../../public/images/${originalFilename}`
+//       //   )
+//       //   if (fs.existsSync(filepath)) {
+//       //     return false
+//       //   }
+//       //   return true
+//       // },
 
-      // 重命名文件名
-      //   filename: function (name, ext, part, form) {
-      //     const filepath = path.join(
-      //       __dirname,
-      //       `../../public/images/${part.originalFilename}`
-      //     )
-      //     // 监听文件上传过程，前置拦截
-      //     form.on("fileBegin", function (_name, file) {
-      //       file.filepath = filepath
-      //     })
-      //     form.on("error", (err) => {
-      //       app.emit("error", err, app.context)
-      //       throw err
-      //     })
-      //     return part.originalFilename
-      //   }
-      // },
-    },
-    onError(err, ctx) {
-      ctx.errCode = err.code
-    }
-  })
-)
+//       // 重命名文件名
+//       //   filename: function (name, ext, part, form) {
+//       //     const filepath = path.join(
+//       //       __dirname,
+//       //       `../../public/images/${part.originalFilename}`
+//       //     )
+//       //     // 监听文件上传过程，前置拦截
+//       //     form.on("fileBegin", function (_name, file) {
+//       //       file.filepath = filepath
+//       //     })
+//       //     form.on("error", (err) => {
+//       //       app.emit("error", err, app.context)
+//       //       throw err
+//       //     })
+//       //     return part.originalFilename
+//       //   }
+//       // },
+//     },
+//     onError(err, ctx) {
+//       ctx.errCode = err.code
+//     }
+//   })
+// )
+
 app.on("error", (error, ctx) => {
   ctx.body = {
     code: -1001,
