@@ -120,10 +120,18 @@
       const showProgress = (progress) => {
         const spanLastEle = filelistEle.querySelector("span:last-child")
         spanLastEle.style.width = `${progress}px`
+        if (progress >= 100) {
+          spanLastEle.classList.remove("progress")
+          spanLastEle.textContent = "上传完成"
+        }
       }
 
       /** 上传文件 */
       uploadEle.addEventListener("click", async () => {
+        if (!upFile) {
+          alert("请选择文件！")
+          return
+        }
         // 切片上传进度
         let progress = 0
         // 分片大小
@@ -170,7 +178,11 @@
       const chunksFile = async (file, chunkSize) => {
         const chunks = []
         const hash = await fileHash(file)
-        for (let size = 0, index = 0; size < file.size; size += chunkSize, index++) {
+        for (
+          let size = 0, index = 0;
+          size < file.size;
+          size += chunkSize, index++
+        ) {
           const chunk = file.slice(size, size + chunkSize)
           chunks.push(new File([chunk], `${hash}_${index}`))
         }

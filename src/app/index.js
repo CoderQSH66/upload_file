@@ -90,7 +90,7 @@ app.on("error", (error, ctx) => {
 })
 
 // 部署静态资源
-app.use(koaStatic(path.resolve(__dirname, "../../static/dist")))
+app.use(koaStatic(path.resolve(__dirname, "../../")))
 app.use(koaStatic(path.resolve(__dirname, "../../static/dist")))
 
 // 注册路由中间件
