@@ -1,2 +1,4 @@
 node_modules
-public/*
+public/big/*
+public/chunks/*
+public/images/*
